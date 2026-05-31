@@ -13,36 +13,69 @@ MAIN_BLUE = "#4472C4"
 ALERT_RED = "#C00000"
 CLEAN_GREEN = "#70AD47"
 
-data = pd.read_csv('AIRBNBListings.csv', encoding='latin-1', low_memory=False)  # Carrega les dades des d'un fitxer CSV
+data = pd.read_csv("dataset/listings.csv.gz", compression="gzip")  # Carrega les dades des d'un fitxer CSV
 df = data.copy()  # Crea una còpia del DataFrame per a manipulacions
-target = "price"  # Variable objectiu que volem explicar
+target = "price_clean" # Variable objectiu que volem explicar
 
-df.drop(columns=["listing_id", "name", "host_id", "host_since", "host_response_time", "host_response_rate",
-                  "host_acceptance_rate", "host_is_superhost", "host_total_listings_count", 
-                  "host_has_profile_pic", "host_identity_verified", "district", "review_scores_rating",
-                  "review_scores_accuracy", "review_scores_checkin", "review_scores_cleanliness",
-                  "review_scores_location", "review_scores_value", "review_scores_communication",
-                  "instant_bookable"], inplace=True)  # Elimina columnes no necessàries
-df.drop(df[df["city"] != "Paris"].index, inplace=True)  # Elimina les files que no pertanyen a Paris
+# NETEJA DEL PREU
+df["price_clean"] = (
+    df["price"]
+    .replace(r"[\$,]", "", regex=True)
+    .astype(float)
+)
+# COLUMNES QUE UTILITZAREM
+columnes_utiles = [
+    "neighbourhood_cleansed",
+    "latitude",
+    "longitude",
+    "room_type",
+    "property_type",
+    "accommodates",
+    "bathrooms",
+    "bedrooms",
+    "beds",
+    "minimum_nights",
+    "availability_90",
+    "availability_365",
+    "number_of_reviews",
+    "number_of_reviews_ltm",
+    "reviews_per_month",
+    "review_scores_rating",
+    "calculated_host_listings_count",
+    "calculated_host_listings_count_entire_homes",
+    "price_clean"
+]
 
-plt.figure(figsize=(5, 4))
+df = df[columnes_utiles].copy()
 
-# Utilitzem un scatter plot com a mapa.
-# L'eix X és la longitud, eix Y latitud.
-# El color (c) representa el preu (target).
-# La mida (s) representa la població del districte.
+# ELIMINAR FILES SENSE PREU O COORDENADES
+df = df.dropna(subset=["price_clean", "latitude", "longitude"])
+
+# ELIMINAR PREUS EXTREMS PER FER EL GRÀFIC MÉS LLEGIBLE
+limit_preu = df["price_clean"].quantile(0.99)
+df_plot = df[df["price_clean"] <= limit_preu].copy()
+
+# COMPROVACIÓ BÀSICA
+print("Files totals després de la neteja:", len(df_plot))
+print("Preu mínim:", df_plot["price_clean"].min())
+print("Preu màxim:", df_plot["price_clean"].max())
+print("Preu mitjà:", round(df_plot["price_clean"].mean(), 2))
+
+# MAPA DE PUNTS AMB PREU
+plt.figure(figsize=(8, 6))
+
 scatter = plt.scatter(
-    df["longitude"], 
-    df["latitude"], 
-    c=df[target], 
-    cmap="coolwarm", # De blau (barat) a vermell (car)
-    alpha=0.5, # Transparència per veure superposicions (densitat)
-    edgecolor=None
+    df_plot["longitude"],
+    df_plot["latitude"],
+    c=df_plot["price_clean"],
+    cmap="coolwarm",
+    alpha=0.6,
+    s=18
 )
 
-# Afegim barra de colors explicativa
 cbar = plt.colorbar(scatter)
-cbar.set_label("Preu del Airbnb", rotation=270, labelpad=20)
+cbar.set_label("Preu de l'allotjament", rotation=270, labelpad=20)
+
 
 # Títols Narratius (Storytelling)
 plt.xlabel("Longitud")

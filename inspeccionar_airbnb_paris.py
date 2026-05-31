@@ -1,6 +1,6 @@
 import pandas as pd
 
-df = pd.read_csv("listings.csv.gz", compression="gzip")
+df = pd.read_csv("dataset/listings.csv.gz", compression="gzip")
 
 columnas_interes = [
   "neighbourhood_cleansed",
