@@ -8,6 +8,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.colors import Normalize
+import seaborn as sns
 
 # ============================================================
 # 1. CONFIGURACIÓ GENERAL
@@ -71,18 +72,17 @@ columnes_utiles = [
     "price_clean"
 ]
 
+target = "price_clean"
+
+features = [col for col in columnes_utiles if col != target]
+
 df = df[columnes_utiles].copy()
 
 # ============================================================
 # 5. ELIMINACIÓ DE NULS BÀSICS
 # ============================================================
 
-df = df.dropna(subset=[
-    "price_clean",
-    "latitude",
-    "longitude",
-    "neighbourhood_cleansed"
-])
+df = df.dropna()
 
 print("\nFiles després d'eliminar nuls bàsics:", len(df))
 
@@ -255,6 +255,41 @@ plt.savefig(
     bbox_inches="tight"
 )
 
+plt.show()
+
+# ============================================================
+# 11. COMPLEMENT DE CORRELACIÓ
+# ============================================================
+print("\nGenerant Bar Chart de correlacions amb la Target...")
+
+# 1. Filtrem només les columnes numèriques per evitar errors amb el text
+numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
+
+# 2. Calculem la correlació només amb aquestes dades
+corr_pearson = df[numeric_cols].corr(method="pearson")
+corr_with_target = corr_pearson[target].drop(target).sort_values(ascending=False)
+
+plt.figure(figsize=(10, 8))
+
+# 3. Colors condicionals: blau positiu, vermell negatiu
+colors_bar = [MAIN_BLUE if x > 0 else ALERT_RED for x in corr_with_target.values]
+
+# Dibuixem el gràfic afegint 'hue' i 'legend=False' per evitar els warnings recents de Seaborn
+sns.barplot(x=corr_with_target.values, y=corr_with_target.index, palette=colors_bar, hue=corr_with_target.index, legend=False)
+
+# 4. Títol adaptat a la realitat del dataset actual
+plt.title("Correlació de les variables numèriques amb el Preu de l'Airbnb", fontsize=15, loc="left", pad=15)
+plt.xlabel("Coeficient de Correlació de Pearson", fontsize=12)
+plt.axvline(x=0, color="black", linestyle="-", linewidth=1) # Línia base a 0
+plt.tight_layout()
+
+plt.savefig(
+    f"{CARPETA_SORTIDA}/correlacions_amb_target_asheville.png",
+    dpi=300,
+    bbox_inches="tight"
+)
+
+
 print("\nRESUM FINAL")
 print("----------")
 print("Anuncis inicials:", len(data))
@@ -269,8 +304,3 @@ print("\nGràfics guardats a:")
 print(CARPETA_SORTIDA)
 
 plt.show()
-
-# ============================================================
-# 11. RESUM FINAL
-# ============================================================
-
