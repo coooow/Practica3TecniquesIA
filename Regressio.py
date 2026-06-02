@@ -12,6 +12,8 @@ from sklearn.metrics import r2_score, mean_squared_error
 from sklearn.metrics import mean_absolute_error
 from sklearn.preprocessing import OneHotEncoder
 
+CARPETA_SORTIDA = "outputs/grafics"
+
 df = pd.read_csv("dataset/listings.csv.gz", compression="gzip")
 
 df["price_clean"] = (
@@ -106,4 +108,72 @@ plt.xlim(lims)
 plt.ylim(lims)
 plt.legend(loc="upper left")
 plt.tight_layout(rect=[0, 0, 1, 0.95])
+
+plt.savefig(
+    f"{CARPETA_SORTIDA}/regressio_lineal_asheville.png",
+    dpi=300,
+    bbox_inches="tight"
+)
+
+plt.show()
+
+#Fem proves seleccionant les variables més significatives segons el test F-regression
+f_values, p_values = f_regression(X_train_encoded, y_train)
+
+features_netes = preprocessor.get_feature_names_out()
+
+importancia_df = pd.DataFrame({
+    "Feature": features_netes,
+    "F_value": f_values,
+    "p_value": p_values
+}).sort_values(by="F_value", ascending=False)
+
+N_FEATURES = 4
+top_indices = importancia_df.head(N_FEATURES).index.tolist()
+top_features_names = importancia_df.head(N_FEATURES)["Feature"].tolist()
+
+print(f"\nLes {N_FEATURES} variables més significatives segons el test F-regression són:")
+print(top_features_names)
+
+X_train_top = X_train_encoded[:, top_indices]
+X_test_top = X_test_encoded[:, top_indices]
+
+model_top = LinearRegression()
+model_top.fit(X_train_top, y_train)
+
+y_pred_top = model_top.predict(X_test_top)
+
+r2_top = r2_score(y_test, y_pred_top)
+rmse_top = np.sqrt(mean_squared_error(y_test, y_pred_top))
+
+plt.figure(figsize=(10, 8))
+
+# Dibuixem el gràfic de dispersió (Observacions Reals vs Prediccions)
+sns.scatterplot(x=y_test, y=y_pred_top, alpha=0.25, color="#4472C4", edgecolor=None)
+
+# Dibuixem la recta de predicció perfecta (on el valor real és igual al predit)
+max_val = y_test.max()
+lims = [0, max_val]
+plt.plot(lims, lims, color="#C00000", linestyle="--", linewidth=2.5, label="Predicció Perfecta (Y = X)")
+
+# Títols orientats a conclusions
+plt.title(f"El model explica el {r2_top*100:.1f}% de la variació dels preus", fontsize=16, loc="left", pad=15)
+
+# Títol secundari corregit: l'RMSE ja està en dòlars reals
+plt.suptitle(f"Regressió Lineal Múltiple | RMSE: {rmse_top:.2f} $ (marge d'error mitjà per nit)", 
+             fontsize=12, color="gray", x=0.31, y=0.92)
+
+plt.xlabel("Preu Real de l'Airbnb ($)", fontsize=12)
+plt.ylabel("Preu Predit pel Model ($)", fontsize=12)
+plt.xlim(lims)
+plt.ylim(lims)
+plt.legend(loc="upper left")
+plt.tight_layout(rect=[0, 0, 1, 0.95])
+
+plt.savefig(
+    f"{CARPETA_SORTIDA}/regressio_lineal_top_features_asheville.png",
+    dpi=300,
+    bbox_inches="tight"
+)
+
 plt.show()
