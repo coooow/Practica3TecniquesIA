@@ -249,6 +249,52 @@ plt.savefig(f"{CARPETA_SORTIDA}/nosupervisat_clusters_pca.png", dpi=300, bbox_in
 plt.show()
 
 # ============================================================
+# 8.1. DISTRIBUCIO GEOGRAFICA DELS CLUSTERS
+# ============================================================
+
+if {"latitude", "longitude"}.issubset(df_resultat.columns):
+    plt.figure(figsize=(9, 7))
+    sns.scatterplot(
+        data=df_resultat,
+        x="longitude",
+        y="latitude",
+        hue="cluster_kmeans",
+        palette="tab10",
+        alpha=0.75,
+        s=35
+    )
+    plt.title("Distribucio geografica dels clusters KMeans")
+    plt.xlabel("Longitud")
+    plt.ylabel("Latitud")
+    plt.legend(title="Cluster")
+    plt.grid(True, alpha=0.25)
+    plt.tight_layout()
+    plt.savefig(f"{CARPETA_SORTIDA}/nosupervisat_clusters_geografics.png", dpi=300, bbox_inches="tight")
+    plt.show()
+
+distribucio_geografica = pd.crosstab(
+    df_resultat["neighbourhood_cleansed"],
+    df_resultat["cluster_kmeans"],
+    normalize="index"
+).round(3)
+
+distribucio_geografica.to_csv(f"{CARPETA_DADES}/nosupervisat_distribucio_geografica.csv")
+
+plt.figure(figsize=(11, 8))
+sns.heatmap(
+    distribucio_geografica,
+    annot=True,
+    fmt=".2f",
+    cmap="YlGnBu"
+)
+plt.title("Distribucio dels clusters per barri")
+plt.xlabel("Cluster")
+plt.ylabel("Barri")
+plt.tight_layout()
+plt.savefig(f"{CARPETA_SORTIDA}/nosupervisat_distribucio_clusters_barri.png", dpi=300, bbox_inches="tight")
+plt.show()
+
+# ============================================================
 # 9. PERFIL I INTERPRETACIO DELS CLUSTERS
 # ============================================================
 
@@ -283,6 +329,8 @@ df_resultat[[
     "neighbourhood_cleansed",
     "room_type",
     "property_type",
+    "latitude",
+    "longitude",
     "price_clean",
     "cluster_kmeans",
     "pca_1",
@@ -344,4 +392,3 @@ print("\nRESULTATS DBSCAN")
 print(resultats_dbscan_df.round(3).to_string(index=False))
 
 resultats_dbscan_df.to_csv(f"{CARPETA_DADES}/nosupervisat_resultats_dbscan.csv", index=False)
-
